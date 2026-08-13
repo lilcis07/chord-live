@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d10" />
+  <meta name="color-scheme" content="dark" />
+  <title>Chord Live</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app-shell">
+    <aside id="sidebar" class="sidebar">
+      <button class="brand-btn" type="button" onclick="goHome()">
+        <span class="brand-mark">♪</span>
+        <span><strong>Chord Live</strong><small>cifras ao vivo</small></span>
+      </button>
+
+      <nav class="nav-main" aria-label="Navegação principal">
+        <button id="nav-home" class="nav-item active" onclick="goHome()">⌂ <span>Início</span></button>
+        <button id="nav-library" class="nav-item" onclick="showLibrary()">♫ <span>Biblioteca</span></button>
+        <button id="nav-new" class="nav-item" onclick="openSongModal()">＋ <span>Nova música</span></button>
+        <button id="nav-setlists" class="nav-item" onclick="showSetlists()">☷ <span>Setlists</span></button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <button class="nav-item" onclick="triggerImport()">⇩ <span>Importar</span></button>
+        <button class="nav-item" onclick="exportLibrary()">⇧ <span>Exportar backup</span></button>
+      </div>
+    </aside>
+
+    <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+
+    <div class="main-wrap">
+      <header class="topbar">
+        <button class="icon-btn mobile-only" onclick="toggleMobileMenu()" aria-label="Menu">☰</button>
+        <button class="topbar-brand" onclick="goHome()">♪ Chord Live</button>
+        <div class="topbar-actions">
+          <button class="ghost-btn" onclick="openSongModal()">＋ Música</button>
+        </div>
+      </header>
+
+      <main id="main-content" class="main-content">
+        <section id="view-home" class="view"></section>
+        <section id="view-library" class="view hidden"></section>
+        <section id="view-setlists" class="view hidden"></section>
+        <section id="view-song" class="view hidden"></section>
+      </main>
+    </div>
+  </div>
+
+  <input id="import-file" class="hidden" type="file" accept=".json,.txt,.cho,.pro,.chordpro,.docx" multiple />
+
+  <div id="modal-backdrop" class="modal-backdrop hidden" onclick="closeModalFromBackdrop(event)">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <div><span class="eyebrow">Editor</span><h2 id="modal-title">Nova música</h2></div>
+        <button class="icon-btn" onclick="closeSongModal()">✕</button>
+      </div>
+      <form id="song-form" onsubmit="saveSong(event)">
+        <div class="editor-grid">
+          <div class="editor-main">
+            <label for="f-lyrics">Cifra</label>
+            <textarea id="f-lyrics" class="lyrics-editor" placeholder="[G]Digite sua cifra aqui..."></textarea>
+          </div>
+          <div class="editor-meta">
+            <label>Título<input id="f-title" required /></label>
+            <label>Artista<input id="f-artist" /></label>
+            <div class="field-row">
+              <label>Tom<input id="f-key" placeholder="G" /></label>
+              <label>BPM<input id="f-bpm" type="number" min="1" max="400" /></label>
+            </div>
+            <label>Observações<textarea id="f-notes" rows="5"></textarea></label>
+            <label class="check-row"><input id="f-favorite" type="checkbox" /> Favorita</label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" onclick="closeSongModal()">Cancelar</button>
+          <button type="submit" class="primary-btn">Salvar música</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
