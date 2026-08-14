@@ -5,7 +5,7 @@ const flatToSharp={Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#'};
 const sharpToFlat={'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb'};
 let state={songs:[],setlists:[]};
 let currentSongId=null,currentTranspose=0,currentSetlistId=null,currentSetlistPos=null,editingSongId=null;
-let autoScroll=false,scrollSpeed=1.2,scrollRaf=null,lastScrollTs=0,fontSize=20;
+let autoScroll=false,scrollSpeed=1.2,scrollRaf=null,lastScrollTs=0,scrollCarry=0,fontSize=20;
 
 const $=id=>document.getElementById(id);
 const uid=()=>crypto?.randomUUID?.()||('id-'+Date.now()+'-'+Math.random().toString(16).slice(2));
@@ -47,17 +47,64 @@ function toggleSongInSetlist(slId,songId,checked){const sl=state.setlists.find(x
 function playSetlist(id){const sl=state.setlists.find(x=>x.id===id);if(!sl||!sl.songs.length)return toast('Essa setlist está vazia.');currentSetlistId=id;currentSetlistPos=0;openSong(sl.songs[0],{preserveSetlist:true})}
 function openSong(id,opt={}){const s=state.songs.find(x=>x.id===id);if(!s)return;if(!opt.preserveSetlist){currentSetlistId=null;currentSetlistPos=null}currentSongId=id;currentTranspose=0;showView('song');activeNav(currentSetlistId?'setlists':'library');renderSong();}
 function renderSong(){const s=state.songs.find(x=>x.id===currentSongId);if(!s)return;const sl=currentSetlistId?state.setlists.find(x=>x.id===currentSetlistId):null;let setNav='';if(sl){setNav=`<div class="song-navstrip"><button class="pill-btn" onclick="prevSetlistSong()" ${currentSetlistPos<=0?'disabled':''}>← Anterior</button><div class="song-context"><strong>${esc(sl.name)}</strong>${currentSetlistPos+1} de ${sl.songs.length}</div><button class="pill-btn" onclick="nextSetlistSong()" ${currentSetlistPos>=sl.songs.length-1?'disabled':''}>Próxima →</button></div>`}
- $('view-song').innerHTML=`<div class="song-view">${setNav}<div class="song-topline"><div><span class="eyebrow">${esc(s.artist||'Música')}</span><h1 class="song-title">${esc(s.title)}</h1><div class="song-sub">${s.key?`Tom <strong id="display-key">${esc(transposedKey(s.key))}</strong>`:''}${s.bpm?` · ${esc(s.bpm)} BPM`:''}</div></div><button class="star-btn ${s.favorite?'on':''}" onclick="toggleFavorite('${s.id}',event)">★</button></div>${s.notes?`<div class="notes-box">${esc(s.notes)}</div>`:''}<div class="stage-toolbar"><div class="stage-actions"><button class="pill-btn" onclick="transpose(-1)">♭ Tom</button><button class="pill-btn" onclick="transpose(1)">♯ Tom</button><button id="scroll-btn" class="pill-btn" onclick="toggleAutoScroll()">▶ Auto scroll</button><button class="pill-btn" onclick="changeScrollSpeed(-.25)">− velocidade</button><button class="pill-btn" onclick="changeScrollSpeed(.25)">＋ velocidade</button></div><div class="stage-actions"><button class="pill-btn" onclick="changeFont(-2)">A−</button><button class="pill-btn" onclick="changeFont(2)">A＋</button><button class="pill-btn" onclick="openSongModal('${s.id}')">✎ Editar</button><button class="primary-btn" onclick="toggleStageMode()">Modo palco</button></div></div><div id="lyrics" class="lyrics" style="font-size:${fontSize}px">${renderLyrics(s.lyrics)}</div></div>`;}
+ $('view-song').innerHTML=`<div class="song-view">${setNav}<div class="song-topline"><div><span class="eyebrow">${esc(s.artist||'Música')}</span><h1 class="song-title">${esc(s.title)}</h1><div class="song-sub">${s.key?`Tom <strong id="display-key">${esc(transposedKey(s.key))}</strong>`:''}${s.bpm?` · ${esc(s.bpm)} BPM`:''}</div></div><button class="star-btn ${s.favorite?'on':''}" onclick="toggleFavorite('${s.id}',event)">★</button></div>${s.notes?`<div class="notes-box">${esc(s.notes)}</div>`:''}<div id="stage-toolbar" class="stage-toolbar"><div class="stage-actions"><button class="pill-btn" onclick="transpose(-1)">♭ Tom</button><button class="pill-btn" onclick="transpose(1)">♯ Tom</button><button id="scroll-btn" class="pill-btn" onclick="toggleAutoScroll()">▶ Auto scroll</button><button class="pill-btn" onclick="changeScrollSpeed(-.25)">− velocidade</button><button class="pill-btn" onclick="changeScrollSpeed(.25)">＋ velocidade</button></div><div class="stage-actions"><button class="pill-btn" onclick="changeFont(-2)">A−</button><button class="pill-btn" onclick="changeFont(2)">A＋</button><button class="pill-btn" onclick="openSongModal('${s.id}')">✎ Editar</button><button class="primary-btn" onclick="toggleStageMode()">Modo palco</button></div></div><div id="lyrics" class="lyrics" style="font-size:${fontSize}px" title="No modo palco, toque duas vezes para mostrar ou ocultar os controles">${renderLyrics(s.lyrics)}</div></div>`;}
 function transposeNote(note,amount){const flat=note?.[1]==='b',n=flatToSharp[note]||note,i=notes.indexOf(n);if(i<0)return note;const r=notes[(i+amount+120)%12];return flat&&sharpToFlat[r]?sharpToFlat[r]:r}
 function transposeChord(chord,amount){const m=String(chord).match(/^([A-G](?:#|b)?)(.*?)(?:\/([A-G](?:#|b)?))?$/);if(!m)return chord;return transposeNote(m[1],amount)+(m[2]||'')+(m[3]?'/'+transposeNote(m[3],amount):'')}
 function transposedKey(k){return transposeNote(k,currentTranspose)}
-function renderLyrics(text=''){return text.split('\n').map(line=>{let safe=esc(line);safe=safe.replace(/\[([^\]]+)\]/g,(_,c)=>`<span class="chord-segment"><span class="chord-tag">${esc(transposeChord(c,currentTranspose))}</span></span>`);if(!line.includes('[')){safe=safe.replace(/\b([A-G](?:#|b)?(?:maj|min|dim|aug|sus|add|m|M|7|9|11|13|6|°|ø|\+|-)*(?:\([^)]*\))?(?:\/[A-G](?:#|b)?)?)(?![A-Za-z0-9])/g,m=>`<span class="chord">${esc(transposeChord(m,currentTranspose))}</span>`)}return `<div class="lyric-line ${line.includes('[')?'has-chord':''}">${safe||'&nbsp;'}</div>`}).join('')}
+function renderLyrics(text=''){
+  return text.split('\n').map(line=>{
+    if(!line.trim())return '<div class="lyric-line empty-line">&nbsp;</div>';
+    if(!line.includes('[')){
+      let safe=esc(line).replace(/\b([A-G](?:#|b)?(?:maj|min|dim|aug|sus|add|m|M|7|9|11|13|6|°|ø|\+|-)*(?:\([^)]*\))?(?:\/[A-G](?:#|b)?)?)(?![A-Za-z0-9])/g,m=>`<span class="chord">${esc(transposeChord(m,currentTranspose))}</span>`);
+      return `<div class="lyric-line">${safe}</div>`;
+    }
+    const re=/\[([^\]]+)\]/g;
+    let html='',last=0,m,found=false;
+    while((m=re.exec(line))){
+      found=true;
+      if(m.index>last)html+=`<span class="lyric-plain">${esc(line.slice(last,m.index))}</span>`;
+      const chord=m[1], textStart=re.lastIndex, next=line.indexOf('[',textStart), textEnd=next===-1?line.length:next;
+      const segmentText=line.slice(textStart,textEnd);
+      html+=`<span class="chord-segment"><span class="chord-tag">${esc(transposeChord(chord,currentTranspose))}</span><span class="segment-text">${esc(segmentText)||'&nbsp;'}</span></span>`;
+      last=textEnd;
+      re.lastIndex=textEnd;
+    }
+    if(!found)return `<div class="lyric-line">${esc(line)}</div>`;
+    if(last<line.length)html+=`<span class="lyric-plain">${esc(line.slice(last))}</span>`;
+    return `<div class="lyric-line has-chord">${html}</div>`;
+  }).join('')
+}
 function transpose(a){currentTranspose+=a;renderSong()}
 function changeFont(a){fontSize=Math.max(12,Math.min(42,fontSize+a));const l=$('lyrics');if(l)l.style.fontSize=fontSize+'px'}
-function toggleStageMode(){document.body.classList.toggle('stage-mode');window.scrollTo({top:0,behavior:'smooth'})}
-function toggleAutoScroll(){autoScroll=!autoScroll;const b=$('scroll-btn');if(b)b.textContent=autoScroll?'⏸ Auto scroll':'▶ Auto scroll';if(autoScroll){lastScrollTs=performance.now();scrollRaf=requestAnimationFrame(scrollStep)}else stopAutoScroll()}
-function scrollStep(ts){if(!autoScroll)return;const dt=Math.min(40,ts-lastScrollTs);lastScrollTs=ts;window.scrollBy(0,scrollSpeed*dt/16.67);if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2){stopAutoScroll();return}scrollRaf=requestAnimationFrame(scrollStep)}
-function stopAutoScroll(){autoScroll=false;if(scrollRaf)cancelAnimationFrame(scrollRaf);scrollRaf=null;const b=$('scroll-btn');if(b)b.textContent='▶ Auto scroll'}
+function toggleStageMode(){
+  const entering=!document.body.classList.contains('stage-mode');
+  document.body.classList.toggle('stage-mode');
+  document.body.classList.remove('stage-controls-hidden');
+  const root=document.scrollingElement||document.documentElement;
+  root.scrollTop=0;
+  if(entering&&window.matchMedia('(max-width: 900px)').matches){
+    setTimeout(()=>document.body.classList.add('stage-controls-hidden'),1200);
+    toast('No modo palco: toque 2x na cifra para mostrar ou ocultar os controles.');
+  }
+}
+function toggleStageControls(){if(document.body.classList.contains('stage-mode'))document.body.classList.toggle('stage-controls-hidden')}
+function toggleAutoScroll(){
+  autoScroll=!autoScroll;
+  const b=$('scroll-btn');if(b)b.textContent=autoScroll?'⏸ Auto scroll':'▶ Auto scroll';
+  if(autoScroll){lastScrollTs=performance.now();scrollCarry=0;document.documentElement.classList.add('auto-scrolling');scrollRaf=requestAnimationFrame(scrollStep)}else stopAutoScroll()
+}
+function scrollStep(ts){
+  if(!autoScroll)return;
+  const root=document.scrollingElement||document.documentElement;
+  const dt=Math.min(80,Math.max(0,ts-lastScrollTs));lastScrollTs=ts;
+  scrollCarry+=scrollSpeed*dt/16.67;
+  const pixels=Math.floor(scrollCarry);
+  if(pixels>0){root.scrollTop=root.scrollTop+pixels;scrollCarry-=pixels}
+  const maxScroll=Math.max(0,root.scrollHeight-window.innerHeight);
+  if(root.scrollTop>=maxScroll-1){root.scrollTop=maxScroll;stopAutoScroll();return}
+  scrollRaf=requestAnimationFrame(scrollStep)
+}
+function stopAutoScroll(){autoScroll=false;if(scrollRaf)cancelAnimationFrame(scrollRaf);scrollRaf=null;scrollCarry=0;document.documentElement.classList.remove('auto-scrolling');const b=$('scroll-btn');if(b)b.textContent='▶ Auto scroll'}
 function changeScrollSpeed(d){scrollSpeed=Math.max(.25,Math.min(5,scrollSpeed+d));toast(`Velocidade: ${scrollSpeed.toFixed(2)}x`)}
 function nextSetlistSong(){const sl=state.setlists.find(x=>x.id===currentSetlistId);if(!sl||currentSetlistPos>=sl.songs.length-1)return;stopAutoScroll();currentSetlistPos++;currentSongId=sl.songs[currentSetlistPos];currentTranspose=0;window.scrollTo({top:0});renderSong()}
 function prevSetlistSong(){const sl=state.setlists.find(x=>x.id===currentSetlistId);if(!sl||currentSetlistPos<=0)return;stopAutoScroll();currentSetlistPos--;currentSongId=sl.songs[currentSetlistPos];currentTranspose=0;window.scrollTo({top:0});renderSong()}
@@ -72,6 +119,22 @@ function exportLibrary(){const blob=new Blob([JSON.stringify(state,null,2)],{typ
 function toggleMobileMenu(){$('sidebar').classList.toggle('open');$('mobile-overlay').classList.toggle('open')}
 function closeMobileMenu(){$('sidebar').classList.remove('open');$('mobile-overlay').classList.remove('open')}
 function toast(msg){document.querySelector('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
-let touchX=null;document.addEventListener('touchstart',e=>{if(!currentSetlistId||$('view-song').classList.contains('hidden'))return;touchX=e.changedTouches[0].clientX},{passive:true});document.addEventListener('touchend',e=>{if(touchX===null)return;const d=e.changedTouches[0].clientX-touchX;touchX=null;if(Math.abs(d)<60)return;d<0?nextSetlistSong():prevSetlistSong()},{passive:true});
+let touchX=null,touchY=null,lastStageTap=0;
+document.addEventListener('touchstart',e=>{
+  if($('view-song').classList.contains('hidden'))return;
+  touchX=e.changedTouches[0].clientX;touchY=e.changedTouches[0].clientY;
+},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(touchX===null)return;
+  const dx=e.changedTouches[0].clientX-touchX,dy=e.changedTouches[0].clientY-touchY;
+  touchX=null;touchY=null;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.25&&currentSetlistId){dx<0?nextSetlistSong():prevSetlistSong();return}
+  const inLyrics=e.target.closest?.('#lyrics');
+  if(inLyrics&&Math.abs(dx)<18&&Math.abs(dy)<18&&document.body.classList.contains('stage-mode')){
+    const now=Date.now();
+    if(now-lastStageTap<330){toggleStageControls();lastStageTap=0}else lastStageTap=now;
+  }
+},{passive:true});
+document.addEventListener('dblclick',e=>{if(e.target.closest?.('#lyrics')&&document.body.classList.contains('stage-mode'))toggleStageControls()});
 document.addEventListener('keydown',e=>{if($('modal-backdrop')&&!$('modal-backdrop').classList.contains('hidden'))return;if(!$('view-song').classList.contains('hidden')&&currentSetlistId){if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();nextSetlistSong()}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();prevSetlistSong()}}if(e.key==='Escape'&&document.body.classList.contains('stage-mode'))document.body.classList.remove('stage-mode')});
 loadState();goHome();
