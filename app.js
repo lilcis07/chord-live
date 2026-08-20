@@ -58,6 +58,13 @@ function renderLyrics(text=''){
       let safe=esc(line).replace(/\b([A-G](?:#|b)?(?:maj|min|dim|aug|sus|add|m|M|7|9|11|13|6|°|ø|\+|-)*(?:\([^)]*\))?(?:\/[A-G](?:#|b)?)?)(?![A-Za-z0-9])/g,m=>`<span class="chord">${esc(transposeChord(m,currentTranspose))}</span>`);
       return `<div class="lyric-line">${safe}</div>`;
     }
+    // Se a linha contém apenas blocos entre colchetes e espaços, trata como trecho instrumental.
+    // Cada acorde vira uma unidade independente, evitando sobreposição em telas estreitas.
+    const bracketOnly = line.replace(/\[[^\]]+\]/g,'').trim()==='';
+    if(bracketOnly){
+      const items=[...line.matchAll(/\[([^\]]+)\]/g)].map(m=>m[1]);
+      return `<div class="lyric-line instrumental-line">${items.map(ch=>`<span class="instrumental-chord">${esc(transposeChord(ch,currentTranspose))}</span>`).join('')}</div>`;
+    }
     const re=/\[([^\]]+)\]/g;
     let html='',last=0,m,found=false;
     while((m=re.exec(line))){
@@ -129,12 +136,17 @@ document.addEventListener('touchend',e=>{
   const dx=e.changedTouches[0].clientX-touchX,dy=e.changedTouches[0].clientY-touchY;
   touchX=null;touchY=null;
   if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.25&&currentSetlistId){dx<0?nextSetlistSong():prevSetlistSong();return}
-  const inLyrics=e.target.closest?.('#lyrics');
-  if(inLyrics&&Math.abs(dx)<18&&Math.abs(dy)<18&&document.body.classList.contains('stage-mode')){
+  const inStageSong=e.target.closest?.('#view-song');
+  const interactive=e.target.closest?.('button,a,input,textarea,select,label');
+  if(inStageSong&&!interactive&&Math.abs(dx)<18&&Math.abs(dy)<18&&document.body.classList.contains('stage-mode')){
     const now=Date.now();
     if(now-lastStageTap<330){toggleStageControls();lastStageTap=0}else lastStageTap=now;
   }
 },{passive:true});
-document.addEventListener('dblclick',e=>{if(e.target.closest?.('#lyrics')&&document.body.classList.contains('stage-mode'))toggleStageControls()});
+document.addEventListener('dblclick',e=>{
+  const inStageSong=e.target.closest?.('#view-song');
+  const interactive=e.target.closest?.('button,a,input,textarea,select,label');
+  if(inStageSong&&!interactive&&document.body.classList.contains('stage-mode'))toggleStageControls();
+});
 document.addEventListener('keydown',e=>{if($('modal-backdrop')&&!$('modal-backdrop').classList.contains('hidden'))return;if(!$('view-song').classList.contains('hidden')&&currentSetlistId){if(['ArrowRight','PageDown'].includes(e.key)){e.preventDefault();nextSetlistSong()}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();prevSetlistSong()}}if(e.key==='Escape'&&document.body.classList.contains('stage-mode'))document.body.classList.remove('stage-mode')});
 loadState();goHome();

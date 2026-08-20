@@ -30,3 +30,15 @@ html.auto-scrolling{scroll-behavior:auto!important}
   .stage-mode .main-content{padding:12px 14px}
   .stage-mode .song-topline{margin-bottom:10px}
 }
+
+/* V7 — linhas instrumentais */
+.instrumental-line{display:flex;flex-wrap:wrap;align-items:center;gap:.55em 1.25em;min-height:2em;margin:.28em 0 .55em;line-height:1.25}
+.instrumental-chord{display:inline-block;flex:0 0 auto;color:var(--accent);font-weight:800;white-space:nowrap;line-height:1.2}
+@media(max-width:560px){.instrumental-line{gap:.6em 1em;margin:.35em 0 .7em}.instrumental-chord{max-width:100%}}
+
+
+/* V8 — gesto de dois toques em toda a tela do modo palco */
+.stage-mode #view-song{min-height:100vh}
+.stage-mode .song-view{min-height:100vh}
+.stage-mode .main-content{min-height:100vh}
+.stage-mode #view-song,.stage-mode .song-view,.stage-mode .lyrics{touch-action:pan-y pinch-zoom;-webkit-tap-highlight-color:transparent}
