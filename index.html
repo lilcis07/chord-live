@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="color-scheme" content="dark" />
   <title>Chord Live</title>
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=10" />
 </head>
 <body>
   <div id="app-shell">
@@ -62,8 +62,8 @@
       <form id="song-form" onsubmit="saveSong(event)">
         <div class="editor-grid">
           <div class="editor-main">
-            <label for="f-lyrics">Cifra</label>
-            <textarea id="f-lyrics" class="lyrics-editor" placeholder="[G]Digite sua cifra aqui..."></textarea>
+            <label for="f-lyrics">Cifra<span class="hint">Cole direto do Cifra Club (acordes acima da letra) ou escreva com colchetes, ex: Ainda [F]que pra te ser[F/G]vir</span></label>
+            <textarea id="f-lyrics" class="lyrics-editor" placeholder="Cole aqui a cifra do Cifra Club:&#10;Em        D&#10;Ainda que pra te servir&#10;&#10;ou escreva com colchetes:&#10;Ainda [F]que pra te ser[F/G]vir"></textarea>
           </div>
           <div class="editor-meta">
             <label>Título<input id="f-title" required /></label>
@@ -85,6 +85,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
