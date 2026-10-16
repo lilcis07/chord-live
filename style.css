@@ -35,7 +35,7 @@
 @media(max-width:560px){.instrumental-line{gap:.6em 1em;margin:.35em 0 .7em}.instrumental-chord{max-width:100%}}
 
 /* V9 — acordes em fluxo (sem sobreposição), palco com barra flutuante */
-:root{--chord:#00d2ff;--muted:#b0bacb}
+:root{--chord:#6ee7d8;--muted:#b0bacb}
 @keyframes fade{from{opacity:.4}to{opacity:1}}
 .nav-item{color:#d3dae6}
 .lyrics{line-height:1.5;padding-bottom:42vh}
