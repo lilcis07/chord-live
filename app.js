@@ -49,7 +49,7 @@ function editSetlist(id){
   slRenderOrder(id);slRenderAdd(id);
 }
 const SL_GRIP='<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><circle cx="6" cy="4" r="1.7"/><circle cx="12" cy="4" r="1.7"/><circle cx="6" cy="9" r="1.7"/><circle cx="12" cy="9" r="1.7"/><circle cx="6" cy="14" r="1.7"/><circle cx="12" cy="14" r="1.7"/></svg>';
-const slMeta=s=>esc([s.artist,s.key&&'Tom '+s.key].filter(Boolean).join(' · '));
+const slMeta=s=>{const n=Number.isInteger(s.transpose)?s.transpose:0,k=s.key?(n?`Tom ${transposeChord(s.key,n)} (orig. ${s.key})`:`Tom ${s.key}`):'';return esc([s.artist,k].filter(Boolean).join(' · '))};
 function slRenderOrder(id){
   const sl=state.setlists.find(x=>x.id===id);if(!sl||!$('sl-order'))return;
   const rows=sl.songs.map(sid=>state.songs.find(x=>x.id===sid)).filter(Boolean);
@@ -112,7 +112,7 @@ function slDragStart(e,slId){
   tick();
 }
 function playSetlist(id){const sl=state.setlists.find(x=>x.id===id);if(!sl||!sl.songs.length)return toast('Essa setlist está vazia.');currentSetlistId=id;currentSetlistPos=0;openSong(sl.songs[0],{preserveSetlist:true})}
-function openSong(id,opt={}){const s=state.songs.find(x=>x.id===id);if(!s)return;if(!opt.preserveSetlist){currentSetlistId=null;currentSetlistPos=null}currentSongId=id;currentTranspose=0;showView('song');activeNav(currentSetlistId?'setlists':'library');renderSong();}
+function openSong(id,opt={}){const s=state.songs.find(x=>x.id===id);if(!s)return;if(!opt.preserveSetlist){currentSetlistId=null;currentSetlistPos=null}currentSongId=id;currentTranspose=songTranspose(id);showView('song');activeNav(currentSetlistId?'setlists':'library');renderSong();}
 function renderSong(){
   const s=state.songs.find(x=>x.id===currentSongId);if(!s)return;
   const sl=currentSetlistId?state.setlists.find(x=>x.id===currentSetlistId):null;
@@ -267,15 +267,19 @@ function refreshSong(){
   const k=$('display-key');if(k&&s.key)k.textContent=transposedKey(s.key);
   updateTransposeUI();
 }
-function transpose(a){let n=currentTranspose+a;if(n>6)n-=12;if(n<-5)n+=12;currentTranspose=n;refreshSong()}
-function resetTranspose(){currentTranspose=0;refreshSong()}
+// O tom escolhido fica salvo na própria música: vale em qualquer setlist, na biblioteca e depois de fechar o app.
+// "original" (0) apaga o campo. O campo "Tom" da música continua sendo o tom original.
+function songTranspose(id){const s=state.songs.find(x=>x.id===id);return s&&Number.isInteger(s.transpose)?s.transpose:0}
+function setSongTranspose(n){currentTranspose=n;const s=state.songs.find(x=>x.id===currentSongId);if(s){if(n)s.transpose=n;else delete s.transpose;saveState()}refreshSong()}
+function transpose(a){let n=currentTranspose+a;if(n>6)n-=12;if(n<-5)n+=12;setSongTranspose(n)}
+function resetTranspose(){setSongTranspose(0)}
 function changeFont(a){fontSize=Math.max(12,Math.min(42,fontSize+a));const l=$('lyrics');if(l)l.style.fontSize=fontSize+'px'}
 function toggleStageMode(){
   document.body.classList.toggle('stage-mode');
   (document.scrollingElement||document.documentElement).scrollTop=0;
 }
-function nextSetlistSong(){const sl=state.setlists.find(x=>x.id===currentSetlistId);if(!sl||currentSetlistPos>=sl.songs.length-1)return;currentSetlistPos++;currentSongId=sl.songs[currentSetlistPos];currentTranspose=0;window.scrollTo({top:0});renderSong()}
-function prevSetlistSong(){const sl=state.setlists.find(x=>x.id===currentSetlistId);if(!sl||currentSetlistPos<=0)return;currentSetlistPos--;currentSongId=sl.songs[currentSetlistPos];currentTranspose=0;window.scrollTo({top:0});renderSong()}
+function nextSetlistSong(){const sl=state.setlists.find(x=>x.id===currentSetlistId);if(!sl||currentSetlistPos>=sl.songs.length-1)return;currentSetlistPos++;currentSongId=sl.songs[currentSetlistPos];currentTranspose=songTranspose(currentSongId);window.scrollTo({top:0});renderSong()}
+function prevSetlistSong(){const sl=state.setlists.find(x=>x.id===currentSetlistId);if(!sl||currentSetlistPos<=0)return;currentSetlistPos--;currentSongId=sl.songs[currentSetlistPos];currentTranspose=songTranspose(currentSongId);window.scrollTo({top:0});renderSong()}
 function openSongModal(id=null){editingSongId=id;const s=id?state.songs.find(x=>x.id===id):null;$('modal-title').textContent=s?'Editar música':'Nova música';$('f-title').value=s?.title||'';$('f-artist').value=s?.artist||'';$('f-key').value=s?.key||'';$('f-bpm').value=s?.bpm||'';$('f-notes').value=s?.notes||'';$('f-lyrics').value=s?.lyrics||'';$('f-favorite').checked=!!s?.favorite;$('modal-backdrop').classList.remove('hidden');setTimeout(()=>$('f-title').focus(),20)}
 function closeSongModal(){$('modal-backdrop').classList.add('hidden');editingSongId=null}
 function closeModalFromBackdrop(e){if(e.target.id==='modal-backdrop')closeSongModal()}
