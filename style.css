@@ -115,3 +115,12 @@ input,textarea,select,.search{font-size:16px}
   .song-navstrip{bottom:calc(8px + env(safe-area-inset-bottom,0px))}
   .stage-mode .main-content{padding-top:calc(122px + env(safe-area-inset-top,0px));padding-left:calc(14px + env(safe-area-inset-left,0px));padding-right:calc(14px + env(safe-area-inset-right,0px))}
 }
+
+/* V13 — nomes longos quebram em várias linhas em vez de estourar o layout */
+.sl-info strong{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.25}
+.sl-info small{display:block;overflow-wrap:anywhere;line-height:1.3;margin-top:2px}
+.sl-row>.icon-btn,.sl-handle{flex-shrink:0}
+.setlist-song-row>span{min-width:0;overflow-wrap:anywhere}
+.setlist-card,.song-card,.card-top>div,.page-head>div,.song-topline>div,.song-context,.song-navstrip>*{min-width:0}
+.setlist-card h3,.song-card h3,.page-head h1,.song-title,.song-context strong,.stat strong,.song-sub{overflow-wrap:anywhere}
+.cards{grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr))}
