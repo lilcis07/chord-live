@@ -38,12 +38,79 @@ function renderLibrary(){
 function filterLibrary(){const q=($('library-search')?.value||'').toLowerCase(),f=$('library-filter')?.value||'all';const arr=state.songs.filter(s=>(f!=='fav'||s.favorite)&&[s.title,s.artist,s.key].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.title.localeCompare(b.title,'pt-BR'));$('library-grid').innerHTML=arr.length?arr.map(songCard).join(''):'<div class="empty-panel">Nenhuma música encontrada.</div>'}
 function toggleFavorite(id,e){e?.stopPropagation();const s=state.songs.find(x=>x.id===id);if(!s)return;s.favorite=!s.favorite;s.updatedAt=Date.now();saveState();if(!$('view-library').classList.contains('hidden'))filterLibrary();if(!$('view-home').classList.contains('hidden'))renderHome()}
 function renderSetlists(){
- const html=state.setlists.length?state.setlists.map(sl=>`<article class="setlist-card"><div class="card-top"><div><span class="eyebrow">Setlist</span><h3>${esc(sl.name)}</h3><span class="muted">${sl.songs.length} música(s)</span></div></div><div>${sl.songs.slice(0,5).map(id=>{const s=state.songs.find(x=>x.id===id);return s?`<div class="setlist-song-row"><span>${esc(s.title)}</span></div>`:''}).join('')}</div><div class="card-actions"><button class="primary-btn" onclick="playSetlist('${sl.id}')">▶ Tocar</button><button class="ghost-btn" onclick="editSetlist('${sl.id}')">Editar</button></div></article>`).join(''):'<div class="empty-panel">Você ainda não criou nenhuma setlist.</div>';
+ const html=state.setlists.length?state.setlists.map(sl=>`<article class="setlist-card"><div class="card-top"><div><span class="eyebrow">Setlist</span><h3>${esc(sl.name)}</h3><span class="muted">${sl.songs.length} música(s)</span></div></div><div>${sl.songs.slice(0,5).map((id,i)=>{const s=state.songs.find(x=>x.id===id);return s?`<div class="setlist-song-row"><span>${i+1}. ${esc(s.title)}</span></div>`:''}).join('')+(sl.songs.length>5?`<div class="setlist-song-row muted"><span>+${sl.songs.length-5} mais</span></div>`:'')}</div><div class="card-actions"><button class="primary-btn" onclick="playSetlist('${sl.id}')">▶ Tocar</button><button class="ghost-btn" onclick="editSetlist('${sl.id}')">Editar</button></div></article>`).join(''):'<div class="empty-panel">Você ainda não criou nenhuma setlist.</div>';
  $('view-setlists').innerHTML=`<div class="page-head"><div><span class="eyebrow">Setlists</span><h1>Sequências para tocar</h1><p>Abra uma setlist e avance pelas músicas sem voltar para a biblioteca.</p></div><button class="primary-btn" onclick="createSetlist()">＋ Nova setlist</button></div><div class="cards">${html}</div>`;
 }
 function createSetlist(){const name=prompt('Nome da nova setlist:');if(!name)return;const sl={id:uid(),name,songs:[]};state.setlists.push(sl);saveState();editSetlist(sl.id)}
-function editSetlist(id){const sl=state.setlists.find(x=>x.id===id);if(!sl)return;showView('setlists');activeNav('setlists');const options=state.songs.map(s=>`<label class="setlist-song-row"><span><input type="checkbox" ${sl.songs.includes(s.id)?'checked':''} onchange="toggleSongInSetlist('${sl.id}','${s.id}',this.checked)"> ${esc(s.title)}</span></label>`).join('');$('view-setlists').innerHTML=`<div class="page-head"><div><span class="eyebrow">Editar setlist</span><h1>${esc(sl.name)}</h1><p>Marque as músicas que devem fazer parte desta sequência.</p></div><div class="row-actions"><button class="primary-btn" onclick="playSetlist('${sl.id}')">▶ Tocar</button><button class="ghost-btn" onclick="showSetlists()">Concluir</button></div></div><div class="setlist-card">${options||'<div class="empty-panel">Adicione músicas primeiro.</div>'}</div>`}
-function toggleSongInSetlist(slId,songId,checked){const sl=state.setlists.find(x=>x.id===slId);if(!sl)return;if(checked&&!sl.songs.includes(songId))sl.songs.push(songId);if(!checked)sl.songs=sl.songs.filter(x=>x!==songId);saveState()}
+function editSetlist(id){
+  const sl=state.setlists.find(x=>x.id===id);if(!sl)return;
+  showView('setlists');activeNav('setlists');
+  $('view-setlists').innerHTML=`<div class="page-head"><div><span class="eyebrow">Editar setlist</span><h1>${esc(sl.name)}</h1><p>Segure o ícone de arrastar à esquerda de cada música e leve até a posição que quiser. Essa é a ordem em que elas aparecem ao tocar.</p></div><div class="row-actions"><button class="primary-btn" onclick="playSetlist('${sl.id}')">▶ Tocar</button><button class="ghost-btn" onclick="showSetlists()">Concluir</button></div></div><div class="section-title"><div><h2>Ordem da setlist</h2><p id="sl-count"></p></div></div><div id="sl-order" class="sl-list"></div><div class="section-block"><div class="section-title"><div><h2>Adicionar músicas</h2><p>Toque em ＋ para colocar no fim da setlist.</p></div></div><div class="toolbar"><input id="sl-search" class="search" type="search" placeholder="Buscar na biblioteca…" oninput="slRenderAdd('${sl.id}')"></div><div id="sl-add" class="sl-list"></div></div>`;
+  slRenderOrder(id);slRenderAdd(id);
+}
+const SL_GRIP='<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><circle cx="6" cy="4" r="1.7"/><circle cx="12" cy="4" r="1.7"/><circle cx="6" cy="9" r="1.7"/><circle cx="12" cy="9" r="1.7"/><circle cx="6" cy="14" r="1.7"/><circle cx="12" cy="14" r="1.7"/></svg>';
+const slMeta=s=>esc([s.artist,s.key&&'Tom '+s.key].filter(Boolean).join(' · '));
+function slRenderOrder(id){
+  const sl=state.setlists.find(x=>x.id===id);if(!sl||!$('sl-order'))return;
+  const rows=sl.songs.map(sid=>state.songs.find(x=>x.id===sid)).filter(Boolean);
+  $('sl-count').textContent=`${rows.length} música(s)`;
+  $('sl-order').innerHTML=rows.length?rows.map((s,i)=>`<div class="sl-row" data-id="${s.id}"><button type="button" class="sl-handle" aria-label="Arrastar para mudar a ordem" onpointerdown="slDragStart(event,'${sl.id}')">${SL_GRIP}</button><span class="sl-num">${i+1}</span><div class="sl-info"><strong>${esc(s.title)}</strong><small>${slMeta(s)}</small></div><button type="button" class="icon-btn sl-remove" aria-label="Remover da setlist" onclick="slRemove('${sl.id}','${s.id}')">✕</button></div>`).join(''):'<div class="empty-panel">Nenhuma música ainda. Adicione na lista abaixo.</div>';
+}
+function slRenderAdd(id){
+  const sl=state.setlists.find(x=>x.id===id);if(!sl||!$('sl-add'))return;
+  const q=($('sl-search')?.value||'').trim().toLowerCase();
+  const rows=state.songs.filter(s=>!sl.songs.includes(s.id)&&(!q||`${s.title} ${s.artist||''}`.toLowerCase().includes(q)));
+  $('sl-add').innerHTML=rows.length?rows.map(s=>`<div class="sl-row sl-add-row"><div class="sl-info"><strong>${esc(s.title)}</strong><small>${slMeta(s)}</small></div><button type="button" class="icon-btn sl-addbtn" aria-label="Adicionar à setlist" onclick="slAdd('${sl.id}','${s.id}')">＋</button></div>`).join(''):`<div class="empty-panel">${!state.songs.length?'Adicione músicas à biblioteca primeiro.':q?'Nenhuma música encontrada.':'Todas as músicas já estão nesta setlist.'}</div>`;
+}
+function slAdd(slId,songId){const sl=state.setlists.find(x=>x.id===slId);if(!sl||sl.songs.includes(songId))return;sl.songs.push(songId);saveState();slRenderOrder(slId);slRenderAdd(slId)}
+function slRemove(slId,songId){const sl=state.setlists.find(x=>x.id===slId);if(!sl)return;sl.songs=sl.songs.filter(x=>x!==songId);saveState();slRenderOrder(slId);slRenderAdd(slId)}
+// Arrastar e soltar (funciona com dedo no iPad/iPhone e com mouse): o item acompanha o dedo,
+// os outros abrem espaço, e a tela rola sozinha quando você chega perto da borda.
+function slDragStart(e,slId){
+  if(e.button>0)return;
+  e.preventDefault();
+  const handle=e.currentTarget,row=handle.closest('.sl-row'),list=row.parentElement;
+  try{handle.setPointerCapture(e.pointerId)}catch{}
+  const startY=e.clientY,startTop=row.getBoundingClientRect().top;
+  let lastY=startY,offset=0,raf=null,done=false;
+  row.classList.add('dragging');
+  const update=()=>{
+    const desiredTop=startTop+(lastY-startY);
+    row.style.transform='';
+    let layoutTop=row.getBoundingClientRect().top;
+    const center=desiredTop+row.offsetHeight/2;
+    const sibs=[...list.children].filter(c=>c!==row);
+    let ref=null;
+    for(const s of sibs){const r=s.getBoundingClientRect();if(r.top+r.height/2>center){ref=s;break}}
+    if(ref!==row.nextElementSibling){
+      const before=new Map(sibs.map(s=>[s,s.getBoundingClientRect().top]));
+      list.insertBefore(row,ref);
+      sibs.forEach(s=>{const d=before.get(s)-s.getBoundingClientRect().top;if(d)s.animate([{transform:`translateY(${d}px)`},{transform:'none'}],{duration:150,easing:'ease-out'})});
+      [...list.children].forEach((c,i)=>{const n=c.querySelector('.sl-num');if(n)n.textContent=i+1});
+      layoutTop=row.getBoundingClientRect().top;
+    }
+    offset=desiredTop-layoutTop;
+    row.style.transform=`translateY(${offset}px)`;
+  };
+  const tick=()=>{
+    if(done)return;
+    const h=window.innerHeight,edge=90;
+    if(lastY<edge)window.scrollBy(0,-(4+(edge-lastY)/5));
+    else if(lastY>h-edge)window.scrollBy(0,4+(lastY-(h-edge))/5);
+    update();raf=requestAnimationFrame(tick);
+  };
+  const move=ev=>{lastY=ev.clientY};
+  const end=()=>{
+    if(done)return;done=true;cancelAnimationFrame(raf);
+    handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',end);
+    row.classList.remove('dragging');row.style.transform='';
+    if(offset)row.animate([{transform:`translateY(${offset}px)`},{transform:'none'}],{duration:140,easing:'ease-out'});
+    const sl=state.setlists.find(x=>x.id===slId);
+    if(sl){sl.songs=[...list.children].map(c=>c.dataset.id).filter(Boolean);saveState()}
+  };
+  handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);
+  tick();
+}
 function playSetlist(id){const sl=state.setlists.find(x=>x.id===id);if(!sl||!sl.songs.length)return toast('Essa setlist está vazia.');currentSetlistId=id;currentSetlistPos=0;openSong(sl.songs[0],{preserveSetlist:true})}
 function openSong(id,opt={}){const s=state.songs.find(x=>x.id===id);if(!s)return;if(!opt.preserveSetlist){currentSetlistId=null;currentSetlistPos=null}currentSongId=id;currentTranspose=0;showView('song');activeNav(currentSetlistId?'setlists':'library');renderSong();}
 function renderSong(){

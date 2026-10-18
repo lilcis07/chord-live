@@ -35,7 +35,7 @@
 @media(max-width:560px){.instrumental-line{gap:.6em 1em;margin:.35em 0 .7em}.instrumental-chord{max-width:100%}}
 
 /* V9 — acordes em fluxo (sem sobreposição), palco com barra flutuante */
-:root{--chord:#6ee7d8;--muted:#b0bacb}
+:root{--chord:#00d2ff;--muted:#b0bacb}
 @keyframes fade{from{opacity:.4}to{opacity:1}}
 .nav-item{color:#d3dae6}
 .lyrics{line-height:1.5;padding-bottom:42vh}
@@ -82,3 +82,20 @@
 .lyric-line.key-marker{display:flex;align-items:center;gap:.5em;margin:.9em 0 .3em;min-height:0}
 .key-marker span{color:var(--muted);font-size:.72em;font-weight:800;text-transform:uppercase;letter-spacing:.12em}
 .key-marker strong{color:var(--chord);border:1px solid var(--chord);border-radius:999px;padding:.05em .7em;font-size:.95em}
+
+/* V11 — sem zoom automático do iOS ao tocar em campos (o Safari dá zoom em fonte menor que 16px) */
+input,textarea,select,.search{font-size:16px}
+
+/* V11 — setlist: lista ordenável por arrastar */
+.sl-list{display:grid;gap:8px;position:relative}
+.sl-row{display:flex;align-items:center;gap:10px;min-height:60px;padding:8px 10px;border:1px solid var(--border);border-radius:14px;background:var(--panel2);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.sl-row.dragging{position:relative;z-index:30;background:var(--panel3);border-color:var(--accent);box-shadow:var(--shadow)}
+.sl-handle{flex:0 0 auto;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:12px;background:none;color:var(--muted);cursor:grab;touch-action:none;-webkit-touch-callout:none}
+.sl-handle:active,.sl-row.dragging .sl-handle{color:var(--accent);cursor:grabbing}
+.sl-num{flex:0 0 auto;min-width:1.5em;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}
+.sl-info{flex:1;min-width:0}
+.sl-info strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sl-info small{color:var(--muted)}
+.sl-add-row{padding-left:16px}
+.sl-addbtn{color:var(--accent);font-size:20px}
+.sl-remove{color:var(--muted)}
