@@ -99,3 +99,19 @@ input,textarea,select,.search{font-size:16px}
 .sl-add-row{padding-left:16px}
 .sl-addbtn{color:var(--accent);font-size:20px}
 .sl-remove{color:var(--muted)}
+
+/* V12 — área segura do iPhone/iPad (ilha dinâmica, relógio, barra inferior) quando o site está salvo na tela de início */
+.topbar{height:calc(68px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);padding-left:calc(clamp(18px,3vw,38px) + env(safe-area-inset-left,0px));padding-right:calc(clamp(18px,3vw,38px) + env(safe-area-inset-right,0px))}
+.sidebar{padding-top:calc(22px + env(safe-area-inset-top,0px));padding-bottom:calc(22px + env(safe-area-inset-bottom,0px));padding-left:calc(16px + env(safe-area-inset-left,0px))}
+.main-content{padding-left:calc(clamp(20px,3vw,42px) + env(safe-area-inset-left,0px));padding-right:calc(clamp(20px,3vw,42px) + env(safe-area-inset-right,0px));padding-bottom:calc(clamp(20px,3vw,42px) + env(safe-area-inset-bottom,0px))}
+.stage-toolbar{top:calc(76px + env(safe-area-inset-top,0px))}
+.modal-backdrop{padding:calc(20px + env(safe-area-inset-top,0px)) calc(20px + env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) calc(20px + env(safe-area-inset-left,0px))}
+.toast{bottom:calc(18px + env(safe-area-inset-bottom,0px));right:calc(18px + env(safe-area-inset-right,0px))}
+.stage-mode .main-content{padding-top:calc(84px + env(safe-area-inset-top,0px));padding-left:calc(clamp(14px,4vw,60px) + env(safe-area-inset-left,0px));padding-right:calc(clamp(14px,4vw,60px) + env(safe-area-inset-right,0px));padding-bottom:calc(clamp(14px,4vw,60px) + env(safe-area-inset-bottom,0px))}
+@media(max-width:900px){.stage-toolbar{top:calc(68px + env(safe-area-inset-top,0px))}}
+@media(max-width:560px){
+  .topbar{padding-left:calc(14px + env(safe-area-inset-left,0px));padding-right:calc(14px + env(safe-area-inset-right,0px))}
+  .main-content{padding-left:calc(14px + env(safe-area-inset-left,0px));padding-right:calc(14px + env(safe-area-inset-right,0px));padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+  .song-navstrip{bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  .stage-mode .main-content{padding-top:calc(122px + env(safe-area-inset-top,0px));padding-left:calc(14px + env(safe-area-inset-left,0px));padding-right:calc(14px + env(safe-area-inset-right,0px))}
+}
