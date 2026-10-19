@@ -31,21 +31,56 @@ function renderHome(){
  ${homeSection('Recentes',recent)}${homeSection('Favoritas',fav,true)}`;
 }
 function homeSection(title,arr,isFav=false){return `<div class="section-block"><div class="section-title"><div><h2>${title}</h2><p>${arr.length?'Acesso rápido':'Nenhuma música por aqui ainda.'}</p></div>${isFav?'<button class="ghost-btn" onclick="showLibrary()">Ver biblioteca</button>':''}</div>${arr.length?`<div class="cards">${arr.map(songCard).join('')}</div>`:''}</div>`}
-function songCard(s){return `<article class="song-card"><div class="card-top"><div><span class="eyebrow">${esc(s.artist||'Música')}</span><h3>${esc(s.title)}</h3></div><button class="star-btn ${s.favorite?'on':''}" onclick="toggleFavorite('${s.id}',event)" aria-label="Favoritar">★</button></div><div class="meta-line">${s.key?`<span class="badge">Tom ${esc(s.key)}</span>`:''}${s.bpm?`<span class="badge">${esc(s.bpm)} BPM</span>`:''}</div><div class="card-actions"><button class="ghost-btn" onclick="openSong('${s.id}')">Abrir</button><button class="ghost-btn" onclick="openSongModal('${s.id}')">Editar</button></div></article>`}
+function songCard(s){return `<article class="song-card"><div class="card-top"><div><span class="eyebrow">${esc(s.artist||'Música')}</span><h3>${esc(s.title)}</h3></div><button class="star-btn ${s.favorite?'on':''}" onclick="toggleFavorite('${s.id}',event)" aria-label="Favoritar">★</button></div><div class="meta-line">${s.key?`<span class="badge">Tom ${esc(s.key)}</span>`:''}${s.bpm?`<span class="badge">${esc(s.bpm)} BPM</span>`:''}</div><div class="card-actions"><button class="ghost-btn" onclick="openSong('${s.id}')">Abrir</button><button class="ghost-btn" onclick="openSongModal('${s.id}')">Editar</button><button class="icon-btn danger" onclick="deleteSong('${s.id}')" aria-label="Excluir música">${TRASH}</button></div></article>`}
 function renderLibrary(){
  $('view-library').innerHTML=`<div class="page-head"><div><span class="eyebrow">Biblioteca</span><h1>Suas músicas</h1><p>Pesquise, favorite e abra qualquer cifra.</p></div><button class="primary-btn" onclick="openSongModal()">＋ Nova música</button></div><div class="toolbar"><input id="library-search" class="search" placeholder="Pesquisar por título, artista ou tom..." oninput="filterLibrary()"><select id="library-filter" onchange="filterLibrary()"><option value="all">Todas</option><option value="fav">Favoritas</option></select></div><div id="library-grid" class="cards"></div>`; filterLibrary();
 }
 function filterLibrary(){const q=($('library-search')?.value||'').toLowerCase(),f=$('library-filter')?.value||'all';const arr=state.songs.filter(s=>(f!=='fav'||s.favorite)&&[s.title,s.artist,s.key].join(' ').toLowerCase().includes(q)).sort((a,b)=>a.title.localeCompare(b.title,'pt-BR'));$('library-grid').innerHTML=arr.length?arr.map(songCard).join(''):'<div class="empty-panel">Nenhuma música encontrada.</div>'}
 function toggleFavorite(id,e){e?.stopPropagation();const s=state.songs.find(x=>x.id===id);if(!s)return;s.favorite=!s.favorite;s.updatedAt=Date.now();saveState();if(!$('view-library').classList.contains('hidden'))filterLibrary();if(!$('view-home').classList.contains('hidden'))renderHome()}
 function renderSetlists(){
- const html=state.setlists.length?state.setlists.map(sl=>`<article class="setlist-card"><div class="card-top"><div><span class="eyebrow">Setlist</span><h3>${esc(sl.name)}</h3><span class="muted">${sl.songs.length} música(s)</span></div></div><div>${sl.songs.slice(0,5).map((id,i)=>{const s=state.songs.find(x=>x.id===id);return s?`<div class="setlist-song-row"><span>${i+1}. ${esc(s.title)}</span></div>`:''}).join('')+(sl.songs.length>5?`<div class="setlist-song-row muted"><span>+${sl.songs.length-5} mais</span></div>`:'')}</div><div class="card-actions"><button class="primary-btn" onclick="playSetlist('${sl.id}')">▶ Tocar</button><button class="ghost-btn" onclick="editSetlist('${sl.id}')">Editar</button></div></article>`).join(''):'<div class="empty-panel">Você ainda não criou nenhuma setlist.</div>';
+ const html=state.setlists.length?state.setlists.map(sl=>`<article class="setlist-card"><div class="card-top"><div><span class="eyebrow">Setlist</span><h3>${esc(sl.name)}</h3><span class="muted">${sl.songs.length} música(s)</span></div></div><div>${sl.songs.slice(0,5).map((id,i)=>{const s=state.songs.find(x=>x.id===id);return s?`<div class="setlist-song-row"><span>${i+1}. ${esc(s.title)}</span></div>`:''}).join('')+(sl.songs.length>5?`<div class="setlist-song-row muted"><span>+${sl.songs.length-5} mais</span></div>`:'')}</div><div class="card-actions"><button class="primary-btn" onclick="playSetlist('${sl.id}')">▶ Tocar</button><button class="ghost-btn" onclick="editSetlist('${sl.id}')">Editar</button><button class="icon-btn danger" onclick="deleteSetlist('${sl.id}')" aria-label="Excluir setlist">${TRASH}</button></div></article>`).join(''):'<div class="empty-panel">Você ainda não criou nenhuma setlist.</div>';
  $('view-setlists').innerHTML=`<div class="page-head"><div><span class="eyebrow">Setlists</span><h1>Sequências para tocar</h1><p>Abra uma setlist e avance pelas músicas sem voltar para a biblioteca.</p></div><button class="primary-btn" onclick="createSetlist()">＋ Nova setlist</button></div><div class="cards">${html}</div>`;
+}
+const TRASH='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v5M14 11v5"/></svg>';
+// Janela de confirmação própria (no iPhone o confirm() nativo é feio e some em alguns modos)
+function askConfirm(title,msg,label,onYes){
+  document.getElementById('confirm-backdrop')?.remove();
+  const el=document.createElement('div');el.id='confirm-backdrop';el.className='modal-backdrop confirm-backdrop';
+  el.innerHTML=`<div class="modal-card confirm-card" role="alertdialog" aria-modal="true"><h2>${esc(title)}</h2><p class="muted">${esc(msg)}</p><div class="modal-actions"><button type="button" class="ghost-btn" data-no>Cancelar</button><button type="button" class="danger-btn" data-yes>${esc(label)}</button></div></div>`;
+  el.addEventListener('click',e=>{
+    if(e.target===el||e.target.closest('[data-no]'))el.remove();
+    else if(e.target.closest('[data-yes]')){el.remove();onYes()}
+  });
+  document.body.appendChild(el);el.querySelector('[data-no]').focus();
+}
+const isVisible=v=>!$('view-'+v).classList.contains('hidden');
+function deleteSong(id){
+  const s=state.songs.find(x=>x.id===id);if(!s)return;
+  const n=state.setlists.filter(sl=>sl.songs.includes(id)).length;
+  askConfirm('Excluir música?',`“${s.title}” será removida da biblioteca${n?` e de ${n} setlist(s)`:''}. Isso não pode ser desfeito.`,'Excluir',()=>{
+    const wasOpen=currentSongId===id;
+    state.songs=state.songs.filter(x=>x.id!==id);
+    state.setlists.forEach(sl=>{sl.songs=sl.songs.filter(x=>x!==id)});
+    saveState();closeSongModal();
+    if(wasOpen||isVisible('song')){currentSongId=null;currentSetlistId=null;currentSetlistPos=null;showLibrary()}
+    else if(isVisible('library'))filterLibrary();
+    else if(isVisible('home'))renderHome();
+    toast('Música excluída.');
+  });
+}
+function deleteSetlist(id){
+  const sl=state.setlists.find(x=>x.id===id);if(!sl)return;
+  askConfirm('Excluir setlist?',`A setlist “${sl.name}” será excluída. As músicas continuam na biblioteca.`,'Excluir',()=>{
+    state.setlists=state.setlists.filter(x=>x.id!==id);
+    if(currentSetlistId===id){currentSetlistId=null;currentSetlistPos=null}
+    saveState();showSetlists();toast('Setlist excluída.');
+  });
 }
 function createSetlist(){const name=prompt('Nome da nova setlist:');if(!name)return;const sl={id:uid(),name,songs:[]};state.setlists.push(sl);saveState();editSetlist(sl.id)}
 function editSetlist(id){
   const sl=state.setlists.find(x=>x.id===id);if(!sl)return;
   showView('setlists');activeNav('setlists');
-  $('view-setlists').innerHTML=`<div class="page-head"><div><span class="eyebrow">Editar setlist</span><h1>${esc(sl.name)}</h1><p>Segure o ícone de arrastar à esquerda de cada música e leve até a posição que quiser. Essa é a ordem em que elas aparecem ao tocar.</p></div><div class="row-actions"><button class="primary-btn" onclick="playSetlist('${sl.id}')">▶ Tocar</button><button class="ghost-btn" onclick="showSetlists()">Concluir</button></div></div><div class="section-title"><div><h2>Ordem da setlist</h2><p id="sl-count"></p></div></div><div id="sl-order" class="sl-list"></div><div class="section-block"><div class="section-title"><div><h2>Adicionar músicas</h2><p>Toque em ＋ para colocar no fim da setlist.</p></div></div><div class="toolbar"><input id="sl-search" class="search" type="search" placeholder="Buscar na biblioteca…" oninput="slRenderAdd('${sl.id}')"></div><div id="sl-add" class="sl-list"></div></div>`;
+  $('view-setlists').innerHTML=`<div class="page-head"><div><span class="eyebrow">Editar setlist</span><h1>${esc(sl.name)}</h1><p>Segure o ícone de arrastar à esquerda de cada música e leve até a posição que quiser. Essa é a ordem em que elas aparecem ao tocar.</p></div><div class="row-actions"><button class="primary-btn" onclick="playSetlist('${sl.id}')">▶ Tocar</button><button class="ghost-btn" onclick="showSetlists()">Concluir</button><button class="danger-btn" onclick="deleteSetlist('${sl.id}')">${TRASH} Excluir setlist</button></div></div><div class="section-title"><div><h2>Ordem da setlist</h2><p id="sl-count"></p></div></div><div id="sl-order" class="sl-list"></div><div class="section-block"><div class="section-title"><div><h2>Adicionar músicas</h2><p>Toque em ＋ para colocar no fim da setlist.</p></div></div><div class="toolbar"><input id="sl-search" class="search" type="search" placeholder="Buscar na biblioteca…" oninput="slRenderAdd('${sl.id}')"></div><div id="sl-add" class="sl-list"></div></div>`;
   slRenderOrder(id);slRenderAdd(id);
 }
 const SL_GRIP='<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><circle cx="6" cy="4" r="1.7"/><circle cx="12" cy="4" r="1.7"/><circle cx="6" cy="9" r="1.7"/><circle cx="12" cy="9" r="1.7"/><circle cx="6" cy="14" r="1.7"/><circle cx="12" cy="14" r="1.7"/></svg>';
@@ -135,7 +170,7 @@ function transposedKey(k){return transposeChord(k,currentTranspose)}
    3) Linha só de acordes (intro/solo), com ou sem rótulo: "Intro: Em D C" ou "[Em] [D]" */
 const CHORD_QUAL=['maj13','maj11','maj9','maj7','maj','M13','M11','M9','M7','7M','9M','m7b5','m7#5','mM7','min7','min','dim7','dim','aug','sus2','sus4','sus','add9','add11','add13','add2','add4','add','6/9','7/9','m7/9','m6','m7','m9','m11','m13','m','13','11','9','7','6','5','4','2','°7','°','ø7','ø','º','+5','+','-5','-','Δ'].sort((a,b)=>b.length-a.length).map(q=>q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
 const CHORD_STRICT=new RegExp('^[A-G](?:#|b)?(?:'+CHORD_QUAL+'|[#b](?:5|9|11|13))*(?:\\([^()]*\\))*(?:\\/[A-G](?:#|b)?)?$');
-const MARKER=/^(?:\(?(?:\d+x|x\d+)\)?|\|+)$/i;
+const MARKER=/^(?:\(?(?:\d+x|x\d+)\)?|\|+|[()]+)$/i;
 // Estrito: usado pra decidir se uma linha INTEIRA é de acordes (evita confundir com letra).
 const isChord=t=>t.length<=24&&CHORD_STRICT.test(t);
 // Mais flexível: usado dentro de [colchetes], onde a intenção de escrever um acorde é explícita.
@@ -151,7 +186,17 @@ function chordItems(str){
     if(tk[0]==='['&&tk.endsWith(']')){const inner=tk.slice(1,-1).trim();if(isExplicitChord(inner))items.push({chord:inner});else return null}
     else if(isChord(tk))items.push({chord:tk});
     else if(MARKER.test(tk))items.push({mark:tk});
-    else return null;
+    else{
+      // acorde dentro de um grupo entre parênteses: "(F7M", "E/G#)" ou "(F7M)"
+      const lead=(tk.match(/^\(*/)||[''])[0].length,trail=(tk.match(/\)*$/)||[''])[0].length;let got=null;
+      for(let a=lead;a>=0&&!got;a--)for(let b=trail;b>=0&&!got;b--){
+        if(a+b===0)continue;
+        const core=tk.slice(a,tk.length-b);
+        if(core&&isChord(core))got={chord:core,pre:'('.repeat(a),post:')'.repeat(b)};
+      }
+      if(!got)return null;
+      items.push(got);
+    }
   }
   return items.some(i=>i.chord)?items:null;
 }
@@ -182,7 +227,7 @@ function classify(raw){
     return items?{type:'instr',label,items}:{type:'text',line};
   }
   const items=chordItems(line);
-  if(items)return line.includes('[')?{type:'instr',items}:{type:'bare',line,items};
+  if(items){const grouped=items.some(i=>i.pre||i.post||(i.mark&&/^[()]+$/.test(i.mark)));return line.includes('[')||grouped?{type:'instr',items}:{type:'bare',line,items}}
   if(/\[[^\]]+\]/.test(line)){const units=parseUnits(line);if(units.some(u=>u.chord))return {type:'pro',units}}
   return {type:'text',line};
 }
@@ -233,7 +278,7 @@ function proHtml(units){
 }
 function instrHtml(k){
   const lab=k.label?`<span class="inst-label">${esc(k.label)}</span>`:'';
-  return `<div class="lyric-line instrumental-line">${lab}${k.items.map(i=>i.chord?`<span class="instrumental-chord">${esc(transposeChord(i.chord,currentTranspose))}</span>`:`<span class="inst-mark">${esc(i.mark)}</span>`).join('')}</div>`;
+  return `<div class="lyric-line instrumental-line">${lab}${k.items.map(i=>i.chord?`<span class="inst-item">${i.pre?`<span class="inst-mark">${esc(i.pre)}</span>`:''}<span class="instrumental-chord">${esc(transposeChord(i.chord,currentTranspose))}</span>${i.post?`<span class="inst-mark">${esc(i.post)}</span>`:''}</span>`:`<span class="inst-mark">${esc(i.mark)}</span>`).join('')}</div>`;
 }
 function renderLyrics(text=''){
   const kinds=String(text).split(/\r?\n/).map(classify),out=[];
@@ -280,7 +325,7 @@ function toggleStageMode(){
 }
 function nextSetlistSong(){const sl=state.setlists.find(x=>x.id===currentSetlistId);if(!sl||currentSetlistPos>=sl.songs.length-1)return;currentSetlistPos++;currentSongId=sl.songs[currentSetlistPos];currentTranspose=songTranspose(currentSongId);window.scrollTo({top:0});renderSong()}
 function prevSetlistSong(){const sl=state.setlists.find(x=>x.id===currentSetlistId);if(!sl||currentSetlistPos<=0)return;currentSetlistPos--;currentSongId=sl.songs[currentSetlistPos];currentTranspose=songTranspose(currentSongId);window.scrollTo({top:0});renderSong()}
-function openSongModal(id=null){editingSongId=id;const s=id?state.songs.find(x=>x.id===id):null;$('modal-title').textContent=s?'Editar música':'Nova música';$('f-title').value=s?.title||'';$('f-artist').value=s?.artist||'';$('f-key').value=s?.key||'';$('f-bpm').value=s?.bpm||'';$('f-notes').value=s?.notes||'';$('f-lyrics').value=s?.lyrics||'';$('f-favorite').checked=!!s?.favorite;$('modal-backdrop').classList.remove('hidden');setTimeout(()=>$('f-title').focus(),20)}
+function openSongModal(id=null){editingSongId=id;const s=id?state.songs.find(x=>x.id===id):null;$('modal-title').textContent=s?'Editar música':'Nova música';$('f-title').value=s?.title||'';$('f-artist').value=s?.artist||'';$('f-key').value=s?.key||'';$('f-bpm').value=s?.bpm||'';$('f-notes').value=s?.notes||'';$('f-lyrics').value=s?.lyrics||'';$('f-favorite').checked=!!s?.favorite;$('btn-delete-song').classList.toggle('hidden',!s);$('modal-backdrop').classList.remove('hidden');setTimeout(()=>$('f-title').focus(),20)}
 function closeSongModal(){$('modal-backdrop').classList.add('hidden');editingSongId=null}
 function closeModalFromBackdrop(e){if(e.target.id==='modal-backdrop')closeSongModal()}
 function saveSong(e){e.preventDefault();const data={title:$('f-title').value.trim(),artist:$('f-artist').value.trim(),key:$('f-key').value.trim(),bpm:$('f-bpm').value.trim(),notes:$('f-notes').value.trim(),lyrics:$('f-lyrics').value,favorite:$('f-favorite').checked,updatedAt:Date.now()};if(editingSongId){const i=state.songs.findIndex(x=>x.id===editingSongId);state.songs[i]={...state.songs[i],...data};currentSongId=editingSongId}else{const s={id:uid(),...data};state.songs.push(s);currentSongId=s.id}saveState();closeSongModal();openSong(currentSongId);toast('Música salva.')}
@@ -304,6 +349,7 @@ document.addEventListener('touchend',e=>{
   if(currentSetlistId&&Math.abs(dx)>need&&Math.abs(dx)>Math.abs(dy)*1.25&&!e.target.closest?.('.stage-bar,textarea,input,select'))dx<0?nextSetlistSong():prevSetlistSong();
 },{passive:true});
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.getElementById('confirm-backdrop')){document.getElementById('confirm-backdrop').remove();return}
   if($('modal-backdrop')&&!$('modal-backdrop').classList.contains('hidden'))return;
   if(e.key==='Escape'&&document.body.classList.contains('stage-mode')){document.body.classList.remove('stage-mode');return}
   if(!$('view-song').classList.contains('hidden')&&currentSetlistId){

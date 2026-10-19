@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="color-scheme" content="dark" />
   <title>Chord Live</title>
-  <link rel="stylesheet" href="style.css?v=14" />
+  <link rel="stylesheet" href="style.css?v=15" />
 </head>
 <body>
   <div id="app-shell">
@@ -77,6 +77,7 @@
           </div>
         </div>
         <div class="modal-actions">
+          <button type="button" id="btn-delete-song" class="danger-btn hidden" onclick="deleteSong(editingSongId)">Excluir música</button>
           <button type="button" class="ghost-btn" onclick="closeSongModal()">Cancelar</button>
           <button type="submit" class="primary-btn">Salvar música</button>
         </div>
@@ -85,6 +86,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
-  <script src="app.js?v=14"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>
